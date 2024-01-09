@@ -114,4 +114,7 @@ export interface ResumeData {
   createdAt: string;
   updatedAt: string;
   sections: ResumeSection[];
-} 
+}
+
+// Other exported types will be temporarily moved to store.ts
+// to avoid type conflicts while we refactor 
