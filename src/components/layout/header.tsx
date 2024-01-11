@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function Header() {
   return (
@@ -22,6 +23,7 @@ export function Header() {
           <Link href="/pricing">
             <Button variant="ghost">Pricing</Button>
           </Link>
+          <ThemeToggle />
           <Link href="/editor">
             <Button>Create Resume</Button>
           </Link>
