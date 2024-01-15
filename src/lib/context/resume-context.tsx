@@ -1,8 +1,10 @@
 'use client';
 
-import { createContext, useContext, ReactNode, useEffect, useState } from 'react';
-import { useResumeStore } from '@/lib/store';
-import { ResumeSection, SectionType } from '@/lib/types';
+import { createContext, useContext, ReactNode, useEffect, useState, useCallback } from 'react';
+import { useResumeStore, ResumeSection } from '@/lib/store';
+import { SectionType } from '@/lib/types';
+import { loadResume, saveResume, setupAutoSave } from '@/lib/storage';
+import { toast } from 'sonner';
 
 interface ResumeContextProps {
   activeSection: string | null;
@@ -21,27 +23,67 @@ export function ResumeProvider({ children }: { children: ReactNode }) {
   const store = useResumeStore();
   const [isLoading, setIsLoading] = useState(true);
   
-  // Load initial resume on first render
+  // Load initial resume from localStorage on first render
   useEffect(() => {
-    // Simulate loading and create a default resume if none exists
-    const timer = setTimeout(() => {
-      if (!store.resume) {
+    try {
+      const savedResume = loadResume();
+      
+      if (savedResume) {
+        store.updateResume(savedResume);
+      } else {
         store.createResume('My Resume');
       }
+      
       setIsLoading(false);
-    }, 500);
-    
-    return () => clearTimeout(timer);
+    } catch (error) {
+      console.error('Error loading resume:', error);
+      store.createResume('My Resume');
+      setIsLoading(false);
+    }
   }, [store]);
   
+  // Setup auto-save functionality
+  useEffect(() => {
+    if (!store.resume) return;
+    
+    const cleanup = setupAutoSave((data) => {
+      // This callback is called after successful save
+      // We could show a toast notification here if needed
+    });
+    
+    // Save immediately on any changes
+    saveResume(store.resume);
+    
+    return cleanup;
+  }, [store.resume]);
+  
   // Wrapped store methods to provide as context
+  const addSection = useCallback((type: SectionType, title: string) => {
+    store.addSection(type, title);
+    toast.success(`Added ${title} section`);
+  }, [store]);
+  
+  const updateSection = useCallback((sectionId: string, data: Partial<ResumeSection>) => {
+    store.updateSection(sectionId, data);
+  }, [store]);
+  
+  const removeSection = useCallback((sectionId: string) => {
+    const sectionTitle = store.resume?.sections.find(s => s.id === sectionId)?.title || 'section';
+    store.removeSection(sectionId);
+    toast.success(`Removed ${sectionTitle}`);
+  }, [store]);
+  
+  const moveSection = useCallback((sectionId: string, direction: 'up' | 'down') => {
+    store.moveSection(sectionId, direction);
+  }, [store]);
+  
   const value: ResumeContextProps = {
     activeSection: store.activeSection,
     setActiveSection: store.setActiveSection,
-    addSection: store.addSection,
-    updateSection: store.updateSection,
-    removeSection: store.removeSection,
-    moveSection: store.moveSection,
+    addSection,
+    updateSection,
+    removeSection,
+    moveSection,
     sections: store.resume?.sections || [],
     isLoading,
   };
