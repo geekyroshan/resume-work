@@ -19,23 +19,23 @@ interface ResumeState {
   // Resume CRUD operations
   createResume: () => void;
   deleteResume: (id: string) => void;
-  updateResume: (id: string, data: Partial<ResumeData>) => void;
+  updateResume: (id: string, data: Partial<Omit<ResumeData, 'id' | 'lastUpdated'>>) => void;
   
   // Section CRUD operations
   addExperienceItem: (item: Omit<ExperienceItem, 'id'>) => void;
-  updateExperienceItem: (id: string, item: Partial<ExperienceItem>) => void;
+  updateExperienceItem: (id: string, item: Partial<Omit<ExperienceItem, 'id'>>) => void;
   deleteExperienceItem: (id: string) => void;
   
   addEducationItem: (item: Omit<EducationItem, 'id'>) => void;
-  updateEducationItem: (id: string, item: Partial<EducationItem>) => void;
+  updateEducationItem: (id: string, item: Partial<Omit<EducationItem, 'id'>>) => void;
   deleteEducationItem: (id: string) => void;
   
   addSkillItem: (item: Omit<SkillItem, 'id'>) => void;
-  updateSkillItem: (id: string, item: Partial<SkillItem>) => void;
+  updateSkillItem: (id: string, item: Partial<Omit<SkillItem, 'id'>>) => void;
   deleteSkillItem: (id: string) => void;
   
   addProjectItem: (item: Omit<ProjectItem, 'id'>) => void;
-  updateProjectItem: (id: string, item: Partial<ProjectItem>) => void;
+  updateProjectItem: (id: string, item: Partial<Omit<ProjectItem, 'id'>>) => void;
   deleteProjectItem: (id: string) => void;
   
   // Active resume and section selectors
