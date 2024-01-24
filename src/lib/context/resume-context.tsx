@@ -1,104 +1,78 @@
 'use client';
 
-import { createContext, useContext, ReactNode, useEffect, useState, useCallback } from 'react';
-import { useResumeStore, ResumeSection } from '@/lib/store';
-import { SectionType } from '@/lib/types';
-import { loadResume, saveResume, setupAutoSave } from '@/lib/storage';
-import { toast } from 'sonner';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useResumeStore } from '../store/store';
+import { ResumeData, ResumeSection } from '../types/resume';
+import { createSampleResume } from '../store/defaults';
 
-interface ResumeContextProps {
-  activeSection: string | null;
-  setActiveSection: (sectionId: string | null) => void;
-  addSection: (type: SectionType, title: string) => void;
-  updateSection: (sectionId: string, data: Partial<ResumeSection>) => void;
-  removeSection: (sectionId: string) => void;
-  moveSection: (sectionId: string, direction: 'up' | 'down') => void;
-  sections: ResumeSection[];
+type ResumeContextType = {
+  activeResume: ResumeData | null;
+  activeSection: ResumeSection | null;
   isLoading: boolean;
-}
+  setActiveResumeId: (id: string | null) => void;
+  setActiveSection: (section: ResumeSection | null) => void;
+  createNewResume: () => void;
+  createSampleResume: () => void;
+};
 
-const ResumeContext = createContext<ResumeContextProps | undefined>(undefined);
+const ResumeContext = createContext<ResumeContextType | undefined>(undefined);
 
-export function ResumeProvider({ children }: { children: ReactNode }) {
-  const store = useResumeStore();
+export const ResumeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Load initial resume from localStorage on first render
+  const {
+    resumes,
+    createResume,
+    setActiveResumeId,
+    setActiveSection,
+    getActiveResume,
+    activeSection,
+  } = useResumeStore();
+
+  // Initialize with a sample resume if none exists
   useEffect(() => {
-    try {
-      const savedResume = loadResume();
-      
-      if (savedResume) {
-        store.updateResume(savedResume);
-      } else {
-        store.createResume('My Resume');
+    setIsLoading(true);
+    
+    // Wrap in setTimeout to ensure this runs after initial render
+    setTimeout(() => {
+      if (resumes.length === 0) {
+        createResume();
+      } else if (!getActiveResume() && resumes.length > 0) {
+        setActiveResumeId(resumes[0].id);
       }
-      
       setIsLoading(false);
-    } catch (error) {
-      console.error('Error loading resume:', error);
-      store.createResume('My Resume');
-      setIsLoading(false);
-    }
-  }, [store]);
-  
-  // Setup auto-save functionality
-  useEffect(() => {
-    if (!store.resume) return;
-    
-    const cleanup = setupAutoSave((data) => {
-      // This callback is called after successful save
-      // We could show a toast notification here if needed
-    });
-    
-    // Save immediately on any changes
-    saveResume(store.resume);
-    
-    return cleanup;
-  }, [store.resume]);
-  
-  // Wrapped store methods to provide as context
-  const addSection = useCallback((type: SectionType, title: string) => {
-    store.addSection(type, title);
-    toast.success(`Added ${title} section`);
-  }, [store]);
-  
-  const updateSection = useCallback((sectionId: string, data: Partial<ResumeSection>) => {
-    store.updateSection(sectionId, data);
-  }, [store]);
-  
-  const removeSection = useCallback((sectionId: string) => {
-    const sectionTitle = store.resume?.sections.find(s => s.id === sectionId)?.title || 'section';
-    store.removeSection(sectionId);
-    toast.success(`Removed ${sectionTitle}`);
-  }, [store]);
-  
-  const moveSection = useCallback((sectionId: string, direction: 'up' | 'down') => {
-    store.moveSection(sectionId, direction);
-  }, [store]);
-  
-  const value: ResumeContextProps = {
-    activeSection: store.activeSection,
-    setActiveSection: store.setActiveSection,
-    addSection,
-    updateSection,
-    removeSection,
-    moveSection,
-    sections: store.resume?.sections || [],
-    isLoading,
+    }, 0);
+  }, [resumes.length, createResume, setActiveResumeId, getActiveResume]);
+
+  // Create a sample resume
+  const handleCreateSampleResume = () => {
+    const sampleResume = createSampleResume();
+    useResumeStore.setState(state => ({
+      resumes: [...state.resumes, sampleResume],
+      activeResumeId: sampleResume.id
+    }));
   };
-  
+
+  const contextValue: ResumeContextType = {
+    activeResume: getActiveResume(),
+    activeSection,
+    isLoading,
+    setActiveResumeId,
+    setActiveSection,
+    createNewResume: createResume,
+    createSampleResume: handleCreateSampleResume
+  };
+
   return (
-    <ResumeContext.Provider value={value}>
+    <ResumeContext.Provider value={contextValue}>
       {children}
     </ResumeContext.Provider>
   );
-}
+};
 
-export function useResume() {
+export const useResume = (): ResumeContextType => {
   const context = useContext(ResumeContext);
   if (context === undefined) {
     throw new Error('useResume must be used within a ResumeProvider');
   }
   return context;
-} 
+}; 
