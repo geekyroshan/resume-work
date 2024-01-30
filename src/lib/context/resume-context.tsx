@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useResumeStore } from '../store/store';
 import { ResumeData, ResumeSection } from '../types/resume';
 import { createSampleResume } from '../store/defaults';
+import { toast } from 'sonner';
 
 type ResumeContextType = {
   activeResume: ResumeData | null;
@@ -33,14 +34,16 @@ export const ResumeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsLoading(true);
     
     // Wrap in setTimeout to ensure this runs after initial render
+    // This also gives localStorage time to load via the Zustand middleware
     setTimeout(() => {
       if (resumes.length === 0) {
         createResume();
+        toast.success('Created a new resume');
       } else if (!getActiveResume() && resumes.length > 0) {
         setActiveResumeId(resumes[0].id);
       }
       setIsLoading(false);
-    }, 0);
+    }, 100);
   }, [resumes.length, createResume, setActiveResumeId, getActiveResume]);
 
   // Create a sample resume
@@ -50,6 +53,13 @@ export const ResumeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       resumes: [...state.resumes, sampleResume],
       activeResumeId: sampleResume.id
     }));
+    toast.success('Created a sample resume');
+  };
+
+  // Create a new empty resume
+  const handleCreateNewResume = () => {
+    createResume();
+    toast.success('Created a new resume');
   };
 
   const contextValue: ResumeContextType = {
@@ -58,7 +68,7 @@ export const ResumeProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     isLoading,
     setActiveResumeId,
     setActiveSection,
-    createNewResume: createResume,
+    createNewResume: handleCreateNewResume,
     createSampleResume: handleCreateSampleResume
   };
 
